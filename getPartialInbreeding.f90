@@ -1,8 +1,11 @@
 ! program getPartialInbreeding.f90
 ! ifort -O3 -heap-arrays -fopenmp getPartialInbreeding.f90 -o getPartialInbreeding
 ! ./getPartialInbreeding pedigree_name first_animal last_animal (default pedigree)
+! compiles with gfortran -O3  getPartialInbreeding.f90 -o getPartialInbreeding (normal run) or
+! gfortran -g -Wall -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow   getPartialInbreeding.f90 -o getPartialInbreeding
+! (debug)
 ! it reads a pedigree file and writes a file with partial inbreeding coefficients per ancestor
-! A Legarra, andres.legarra@uscdcb.com, 6 June 2023
+! A Legarra, andres.legarra@uscdcb.com , 6 June 2023
 
 
 module kinds
@@ -18,11 +21,13 @@ module kinds
 end module kinds
 
 
+
 module pedigree
 use kinds
 
 double precision, allocatable::F(:)
 logical:: lmeuw=.true.
+double precision,allocatable::bigD(:)
 contains
 
 
@@ -108,31 +113,93 @@ end subroutine
      call cpu_time(seconds)
  end function
 
+function A_times_v_list_anc(s,d,v,list_anc,anc) result(x)
+!computes x=A*v using Colleau 2002 indirect method 
+! modified to compute partial A using ancestor anc (if present)
+! and to compute only up to bound (if present) i.e. A(1:bound,1:bound)
+! this is conceived for a list of individuals forming a (sub) pedigree e.g.
+! this is conceived for sparse pedigrees, e.g. 
+!          9  nanc=            6
+!          1           0           0
+!          3           1           0
+!          4           0           0
+!          5           0           0
+!          7           4           5
+!          9           7           3
+! the list_anc is : 1 3 4 5 7 9
+! I **do not** recode a new pedigree. I simply skipped unused elements.
+! i.e. the loop in Colleau algorithm works over  1 3 4 5 7 9
+
+implicit none
+integer:: i,nanim,newi
+integer,optional:: anc
+integer:: s(:),d(:),list_anc(:)
+double precision::v(:),bigDplus(size(s))
+double precision::a(size(s)),b(size(s)),dii
+double precision, allocatable:: x(:)
+integer:: last
+! assumes F previously computed
+
+! i can allocate x inside thefunction and is safer
+allocate(x(size(s)))
+
+
+nanim=size(list_anc)
+a=0
+do i=nanim,1,-1
+      newi=list_anc(i)
+      a(newi)=a(newi)+v(newi)
+      if (s(newi)>0) a(s(newi))=a(s(newi))+0.5*a(newi)
+      if (d(newi)>0) a(d(newi))=a(d(newi))+0.5*a(newi)
+enddo
+
+b=0
+
+!if D is precomputed
+!b=D*a
+
+bigDplus=bigD
+if(present(anc)) then
+    if(anc /=0) then
+        ! delete all other mendelian sampling variance
+        dii=bigDplus(anc)
+        bigDplus=0d0
+        bigDplus(anc)=dii
+    endif
+endif
+b=bigDplus*a
+
+
+x=0
+do i=1,nanim
+      newi=list_anc(i)
+      x(newi)=b(newi)
+      if(s(newi)/=0) then
+          x(newi)=x(newi)+0.5*x(s(newi))
+      endif
+      if(d(newi)/=0) then
+          x(newi)=x(newi)+0.5*x(d(newi))
+      endif
+enddo
+end function
 
 function A_times_v(s,d,v,anc,bound) result(x)
 !computes x=A*v using Colleau 2002 indirect method 
 ! modified to compute partial A using ancestor anc (if present)
 ! and to compute only up to bound (if present) i.e. A(1:bound,1:bound)
+! this is conceived for whole pedigrees, i.e. n animals have 1 to n in 1st col
 implicit none
 integer:: i,nanim
 integer,optional:: anc,bound
 integer:: s(:),d(:)
-double precision::v(:),bigD(size(s))
+double precision::v(:),bigDplus(size(s))
 double precision::a(size(s)),b(size(s)),dii
-double precision,allocatable::x(:)
+double precision, allocatable:: x(:)
 integer:: last
+! assumes F previously computed
 
+! i can allocate x inside thefunction and is safer
 allocate(x(size(s)))
-if(lmeuw) then
-  allocate(F(0:size(s)))
-  F=0d0
-  call meuw(s,d,F)
-  lmeuw=.false.
-  ! write inbreeding in file 100 for checking
-  do i=0,size(s)
-    write(100,*)i, F(i)
-  enddo
-endif
 
 
 nanim=size(s)
@@ -144,28 +211,21 @@ do i=nanim,1,-1
       if (d(i)>0) a(d(i))=a(d(i))+0.5*a(i)
 enddo
 
-
 b=0
 
 !if D is precomputed
 !b=D*a
 
-do i=1,nanim
-      !dii=0.5-0.25*(F(s(i))+F(d(i)))
-      ! we can use the simple rule because F(0)=-1
-      bigD(i)=0.5-0.25*(F(s(i))+F(d(i)))
-      !b(i)=a(i)*dii
-enddo
-
+bigDplus=bigD
 if(present(anc)) then
     if(anc /=0) then
         ! delete all other mendelian sampling variance
-        dii=bigD(anc)
-        bigD=0d0
-        bigD(anc)=dii
+        dii=bigDplus(anc)
+        bigDplus=0d0
+        bigDplus(anc)=dii
     endif
 endif
-b=bigD*a
+b=bigDplus*a
 
 
 x=0
@@ -195,6 +255,7 @@ integer:: i,j,k,n,io,cnt,nanc
 integer,allocatable:: ped(:,:)
 double precision, allocatable:: v(:),x(:),w(:)
 double precision:: Fp,val,t1
+! variables for faster approach
 logical,allocatable:: is_anc(:)
 integer,allocatable:: list_anc(:)
 integer::first,last
@@ -204,6 +265,7 @@ if(io/=0) then
         write(error_unit,*) ('what pedigree file?')
         read(input_unit,*)pedfile
 endif
+
 
 open(1,file=pedfile,status='old')
 n=0
@@ -240,6 +302,11 @@ allocate(F(0:n))
 F=0d0
 call meuw(ped(:,2),ped(:,3),F)
 lmeuw=.false.
+allocate(bigD(n))
+do i=1,n
+     ! we can use the simple rule because F(0)=-1
+     bigD(i)=0.5-0.25*(F(ped(i,2))+F(ped(i,3)))
+enddo
 
 ! two uses of Colleau
 ! this below is all for illustration !!
@@ -276,18 +343,27 @@ allocate(is_anc(0:n))
 t1=seconds()
 cnt=0
 do i=first,last
+    if(mod(i,maxval((/1000,(n/20)/)))==0) print '(a,f12.4,a,i10,a,f20.8)','% animals done: ',(100d0*i)/n, &
+    '%, animals done: ',i,' timing ',seconds()-t1
     is_anc=.false.
     if (ped(i,2)/=0 .and. ped(i,3)/=0) then
         call flag_ancestors(i)
-        nanc=count(is_anc)-1-1
+        ! returns 0 + all ancestors + the individual
+        ! henece we substract 1 (nanc=ancestors + individual)
+        nanc=count(is_anc)-1
         allocate(list_anc(nanc))
         call list_ancestors(i)
+        !print *,i,' nanc= ',nanc
+        !print *,list_anc
+        !call create_subped(list_anc)
         !$OMP parallel &
         !$OMP          default(none) &
         !$OMP          shared(i,ped,f,n,is_anc,list_anc,nanc) &
         !$OMP          private(k,j,w,v,x,Fp) &
         !$OMP          reduction(+:cnt)
         allocate(v(n),x(n),w(n))
+        !! allocate x v w y deallocar al salir ; w no se usa se podria quitar
+        !! if allocate here goes to the heap if allocate outside goes to the stack
         !$OMP do
         !do j=1,i
         !    if (is_anc(j)) then
@@ -298,18 +374,21 @@ do i=first,last
                     v=0; v(ped(i,2))=1
                     w=0; w(ped(i,3))=1
                     ! extract A(ped(i,2),:) for A generated by mendelian sampling variance of j
-                    !x=A_times_v(ped(:,2),ped(:,3),v,anc=j)
-                    x=A_times_v(ped(:,2),ped(:,3),v,anc=j,bound=maxval([ped(i,2),ped(i,3)]))
+!                    x=A_times_v(         ped(:,2),ped(:,3),v,         anc=j)
+                    x=A_times_v_list_anc(ped(:,2),ped(:,3),v,list_anc,anc=j)
+
                     Fp=x(ped(i,3))/2
                     !Fp=sum(w*x)/2 ![the same bcs w=1]
                     if(Fp>0) then
                         cnt=cnt+1
-                        write (2,'(2i9,f12.8,i19)')j,i,Fp,nanc
+                        write (2,'(2i9,f12.8,i19)')j,i,Fp,nanc-1
+                        ! the -1 above is bcs nanc indluces the individual itself
                     endif
             !endif
         enddo
         !$OMP end do
-        deallocate(v,x,w)
+        ! deallocar al salir
+        deallocate(x,v,w)
         !$OMP end parallel
         deallocate(list_anc)
     endif
@@ -339,12 +418,25 @@ contains
         pos=0
         ! skip 0
         do j=1,i
-            if (is_anc(j) .and. j/=i)then
+            !if (is_anc(j) .and. j/=i)then
+            if (is_anc(j))then
                 pos=pos+1
                 list_anc(pos)=j
             endif
         enddo
     end subroutine
+    subroutine create_subped(list_anc)
+        integer:: list_anc(:)
+        integer:: subped(size(list_anc)+1,3)
+        integer:: i
+        do i=1,size(list_anc)
+            subped(i,1)=list_anc(i)
+            subped(i,2)=ped(list_anc(i),2)
+            subped(i,3)=ped(list_anc(i),3)
+            !print *,subped(i,:)
+        enddo
+        !print *,'________'
+    end subroutine 
 
 end
 
