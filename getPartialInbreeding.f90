@@ -15,22 +15,16 @@ module kinds
   integer, parameter :: r4 = SELECTED_REAL_KIND( 6, 37 )
   integer, parameter :: r8 = SELECTED_REAL_KIND( 15, 307 )
   integer, parameter :: r16 = SELECTED_REAL_KIND( 18, 4931 )
-
   ! current precison for hash storage
   integer, parameter :: rh=r8
 end module kinds
 
-
-
 module pedigree
 use kinds
-
 double precision, allocatable::F(:)
 logical:: lmeuw=.true.
 double precision,allocatable::bigD(:)
 contains
-
-
 
 subroutine meuw(sss,ddd,fout) 
    !  Meuwissen & Luo
@@ -44,7 +38,6 @@ subroutine meuw(sss,ddd,fout)
    integer :: is,id,i,j,k,n,ks,kd
    double precision :: r,fi
    real :: t1
-
    !print*,'Calculating Inbreeding by M&L function'
    n=size(sss)
    ss=sss
@@ -95,7 +88,6 @@ subroutine meuw(sss,ddd,fout)
                endif
             endif
          endif
-
          fi=fi+l(j)*l(j)*d(j)
          l(j)=0
          k=j
@@ -107,7 +99,6 @@ subroutine meuw(sss,ddd,fout)
    f(0)=-1
    fout(:)=f(0:n)
    write(error_unit,*)'   Calculating Inbreeding by M&L, elapsed time',seconds()-t1
-
 end subroutine
  real function seconds()
      call cpu_time(seconds)
@@ -129,7 +120,6 @@ function A_times_v_list_anc(s,d,v,list_anc,anc) result(x)
 ! the list_anc is : 1 3 4 5 7 9
 ! I **do not** recode a new pedigree. I simply skipped unused elements.
 ! i.e. the loop in Colleau algorithm works over  1 3 4 5 7 9
-
 implicit none
 integer:: i,nanim,newi
 integer,optional:: anc
@@ -139,11 +129,8 @@ double precision::a(size(s)),b(size(s)),dii
 double precision, allocatable:: x(:)
 integer:: last
 ! assumes F previously computed
-
 ! i can allocate x inside thefunction and is safer
 allocate(x(size(s)))
-
-
 nanim=size(list_anc)
 a=0
 do i=nanim,1,-1
@@ -152,12 +139,9 @@ do i=nanim,1,-1
       if (s(newi)>0) a(s(newi))=a(s(newi))+0.5*a(newi)
       if (d(newi)>0) a(d(newi))=a(d(newi))+0.5*a(newi)
 enddo
-
 b=0
-
 !if D is precomputed
 !b=D*a
-
 bigDplus=bigD
 if(present(anc)) then
     if(anc /=0) then
@@ -168,8 +152,6 @@ if(present(anc)) then
     endif
 endif
 b=bigDplus*a
-
-
 x=0
 do i=1,nanim
       newi=list_anc(i)
@@ -197,11 +179,8 @@ double precision::a(size(s)),b(size(s)),dii
 double precision, allocatable:: x(:)
 integer:: last
 ! assumes F previously computed
-
 ! i can allocate x inside thefunction and is safer
 allocate(x(size(s)))
-
-
 nanim=size(s)
 a=0
 if(present(bound))nanim=bound
@@ -210,12 +189,9 @@ do i=nanim,1,-1
       if (s(i)>0) a(s(i))=a(s(i))+0.5*a(i)
       if (d(i)>0) a(d(i))=a(d(i))+0.5*a(i)
 enddo
-
 b=0
-
 !if D is precomputed
 !b=D*a
-
 bigDplus=bigD
 if(present(anc)) then
     if(anc /=0) then
@@ -226,8 +202,6 @@ if(present(anc)) then
     endif
 endif
 b=bigDplus*a
-
-
 x=0
 do i=1,nanim
       x(i)=b(i)
@@ -239,13 +213,11 @@ do i=1,nanim
       endif
 enddo
 end function
-
 end module
 
 
 program test
 !$ use omp_lib
-
 use iso_fortran_env
 use pedigree
 implicit none
@@ -265,8 +237,6 @@ if(io/=0) then
         write(error_unit,*) ('what pedigree file?')
         read(input_unit,*)pedfile
 endif
-
-
 open(1,file=pedfile,status='old')
 n=0
 do 
@@ -280,7 +250,6 @@ allocate(ped(n,3))
 do i=1,n
   read(1,*) ped(i,:)
 enddo
-
 first=1
 last=n
 call get_command_argument(2,value=dummy(1),status=io)
@@ -294,9 +263,6 @@ endif
 write(dummy(1),'(i0)')first
 write(dummy(2),'(i0)')last
 write(*,*)'first= ',first,'last= ',last
-
-
-!allocate(v(n),x(n),w(n))
 allocate(F(0:n))
 ! compute whole pedigree
 F=0d0
@@ -308,37 +274,10 @@ do i=1,n
      bigD(i)=0.5-0.25*(F(ped(i,2))+F(ped(i,3)))
 enddo
 
-! two uses of Colleau
-! this below is all for illustration !!
-!print *,'first task'
-! compute the first column of A
-!v=0
-!v(1)=1
-!x=A_times_v(ped(:,2),ped(:,3),v)
-!print *,'compute the first column of A'
-!do i=1,n
-!  write (10,*)i,x(i)
-!enddo
-
-!print *,'2nd task'
-! sum of all even elements of A
-!v=0
-!do i=2,n,2
-!  v(i)=1
-!enddo
-!x=A_times_v(ped(:,2),ped(:,3),v)
-! here we get v'x=v'Av
-!print *,'sum of even elements of A'
-!print *,sum(v*x)
-
 open(unit=2,file='PartialInbreeding.txt'//trim(adjustl(dummy(1)))//'to'//trim(adjustl(dummy(2))),status='replace')
-!open(unit=2,file='PartialInbreeding.txt',status='replace')
 write (2,*)'ancestor individual Fpartial numberOfAncestors'
 cnt=0
-
-
 ! Method flagging ancestors
-
 allocate(is_anc(0:n))
 t1=seconds()
 cnt=0
@@ -349,45 +288,43 @@ do i=first,last
     if (ped(i,2)/=0 .and. ped(i,3)/=0) then
         call flag_ancestors(i)
         ! returns 0 + all ancestors + the individual
-        ! henece we substract 1 (nanc=ancestors + individual)
+        ! hence we substract 1 (nanc=ancestors + individual)
         nanc=count(is_anc)-1
         allocate(list_anc(nanc))
         call list_ancestors(i)
-        !print *,i,' nanc= ',nanc
-        !print *,list_anc
-        !call create_subped(list_anc)
         !$OMP parallel &
         !$OMP          default(none) &
         !$OMP          shared(i,ped,f,n,is_anc,list_anc,nanc) &
         !$OMP          private(k,j,w,v,x,Fp) &
         !$OMP          reduction(+:cnt)
         allocate(v(n),x(n),w(n))
-        !! allocate x v w y deallocar al salir ; w no se usa se podria quitar
+        !! allocate x v w here; deallocate on exit ; w could be removed 
         !! if allocate here goes to the heap if allocate outside goes to the stack
         !$OMP do
-        !do j=1,i
-        !    if (is_anc(j)) then
+        ! got through all ancestors of k 
         do k=1,nanc
+            ! j is the current ancestor
             j=list_anc(k)
-                    ! we compute how much inbreeding in i was generated by j using
-                    ! Colleau (2002) indirect method
-                    v=0; v(ped(i,2))=1
-                    w=0; w(ped(i,3))=1
-                    ! extract A(ped(i,2),:) for A generated by mendelian sampling variance of j
-!                    x=A_times_v(         ped(:,2),ped(:,3),v,         anc=j)
-                    x=A_times_v_list_anc(ped(:,2),ped(:,3),v,list_anc,anc=j)
-
-                    Fp=x(ped(i,3))/2
-                    !Fp=sum(w*x)/2 ![the same bcs w=1]
-                    if(Fp>0) then
-                        cnt=cnt+1
-                        write (2,'(2i9,f12.8,i19)')j,i,Fp,nanc-1
-                        ! the -1 above is bcs nanc indluces the individual itself
-                    endif
-            !endif
+            ! we compute how much inbreeding in i was generated by j using
+            ! Colleau (2002) indirect method
+            v=0; v(ped(i,2))=1
+            w=0; w(ped(i,3))=1
+            ! extract A(ped(i,2),:) for A generated by mendelian sampling variance of j
+            ! this works but goes through the entire pedigree
+            ! x=A_times_v(         ped(:,2),ped(:,3),v,         anc=j)
+            ! this goes through 
+            x=A_times_v_list_anc(ped(:,2),ped(:,3),v,list_anc,anc=j)
+            ! this is the relationship of j with the mother of i, and its half is the partial inbreeding
+            Fp=x(ped(i,3))/2
+            !Fp=sum(w*x)/2 ![the same bcs w=1]
+            if(Fp>0) then
+                cnt=cnt+1
+                write (2,'(2i9,f12.8,i19)')j,i,Fp,nanc-1
+                ! the -1 above is because nanc includes the individual itself
+            endif
         enddo
         !$OMP end do
-        ! deallocar al salir
+        ! deallocate on exit
         deallocate(x,v,w)
         !$OMP end parallel
         deallocate(list_anc)
@@ -412,13 +349,10 @@ contains
             if (.not. is_anc(ped(i,3))) call flag_ancestors(ped(i,3))
         endif
     end subroutine
-
     subroutine list_ancestors(i)
         integer:: j,pos,i
         pos=0
-        ! skip 0
         do j=1,i
-            !if (is_anc(j) .and. j/=i)then
             if (is_anc(j))then
                 pos=pos+1
                 list_anc(pos)=j
@@ -426,6 +360,7 @@ contains
         enddo
     end subroutine
     subroutine create_subped(list_anc)
+        ! actually not used
         integer:: list_anc(:)
         integer:: subped(size(list_anc)+1,3)
         integer:: i
@@ -433,11 +368,8 @@ contains
             subped(i,1)=list_anc(i)
             subped(i,2)=ped(list_anc(i),2)
             subped(i,3)=ped(list_anc(i),3)
-            !print *,subped(i,:)
         enddo
-        !print *,'________'
     end subroutine 
-
 end
 
 
