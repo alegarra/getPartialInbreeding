@@ -29,7 +29,7 @@ $ ./getPartialInbreeding geneal_comet.txt 10 12
  time for 2nd approach    1.73147599515505  
 ```
 
-The file `PartialInbreeding.txt` (+first to last if included) is as follows
+The file `PartialInbreeding.txt` (+first to last) is as follows
 ```
 $ cat PartialInbreeding.txt10to12 
  ancestor individual Fpartial numberOfAncestors
@@ -43,7 +43,7 @@ $ cat PartialInbreeding.txt10to12
 
 so individual 10 has 5 partial inbreeding coefficients due to individuals 1,3,4,5,7. The column `numberOfAncestors` indicates how many ancestors it has (including itself). The order of ancestor within individual is unpredictable as several threads are potentially used, but this does not affect the final result.
 
-## TtimesI-P.jl
+## TtimesImP.jl
 
 This program computes matrix K=T(I-P). The coefficients in K are the ones used to estimated EBVs for inbreeding depression load.   It is called as e.g.
 
