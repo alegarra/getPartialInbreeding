@@ -65,7 +65,9 @@ the first column is the animal, the second column indicates how many animals in 
 # References
 
 García-Cortés, L. A., Martí-Avila, J. C., & Toro, M. A. (2010). Fine decomposition of the inbreeding and the coancestry coefficients by using the tabular method. Conservation Genetics, 11, 1945-1952.
+
 Martinez-Castillero, M., Varona, L., Pegolo, S., Rossoni, A., & Cecchinato, A. (2021). Bayesian inference of the inbreeding load variance for fertility traits in Brown Swiss cattle. Journal of Dairy Science, 104(9), 10040-10048.
+
 Varona, L., Altarriba, J., Moreno, C., Martínez-Castillero, M., & Casellas, J. (2019). A multivariate analysis with direct additive and inbreeding depression load effects. Genetics Selection Evolution, 51(1), 1-12.
 
 
