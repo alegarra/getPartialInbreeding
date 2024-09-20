@@ -64,7 +64,7 @@ the first column is the animal, the second column indicates how many animals in 
 
 # Example of BLUP for inbreeding load
 
-Go to (exampleBLUP/README.md).
+Go to [example here](exampleBLUP/README.md).
 
 
 
