@@ -1,0 +1,40 @@
+# BLUPF90 parameter file created by RENUMF90
+DATAFILE
+ dat.LV
+NUMBER_OF_TRAITS
+           1
+NUMBER_OF_EFFECTS
+           4
+OBSERVATION(S)
+    1
+WEIGHT(S)
+ 
+EFFECTS: POSITIONS_IN_DATAFILE NUMBER_OF_LEVELS TYPE_OF_EFFECT[EFFECT NESTED]
+# overall mean
+ 2      1 cross 
+# animal is in col 3 and has 5 levels 
+ 3      5 cross
+# "random regression" effects (K fraction of the ancestors in cols 5 qnd following)
+# need as many columns (and effects here) as max ancestors including in the 
+# inbreeding decomposition; in this case, 2 
+# cov1 nested in ancestor1 (in column 5)
+ 4      0 cov 5  
+# only the last of these lines contains the actual number of levels, previous ones contain 0
+# to "cheat" blupf90 to make contributions to the MME in the same positions
+# see https://masuday.github.io/blupf90_tutorial/mrode_c08ex081_social_interaction.html
+ 6      5 cov 7 
+RANDOM_RESIDUAL VALUES
+   1    
+# the Varona et al paper has a mistake, this is the correct Vare
+ RANDOM_GROUP
+   2 3
+ RANDOM_TYPE
+ add_an_upginb
+ FILE
+ped.LV                                                                    
+(CO)VARIANCES
+    2  -0.25 
+ -0.25   1
+OPTION method VCE
+#OPTION no_accelerate_EM
+#OPTION EM-REML AI 10000

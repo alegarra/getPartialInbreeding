@@ -62,6 +62,12 @@ $ cat K.txt
 
 the first column is the animal, the second column indicates how many animals in column 10 of K get a non-zero value, the third column indicates how many animals have values higher than the thresholds, and then there are pairs of (value, individual) which are the corresponding values in K. E.g. the element (11,9) of K is 0.125.
 
+# Example of BLUP for inbreeding load
+
+Go to (exampleBLUP/README.md).
+
+
+
 # References
 
 García-Cortés, L. A., Martí-Avila, J. C., & Toro, M. A. (2010). Fine decomposition of the inbreeding and the coancestry coefficients by using the tabular method. Conservation Genetics, 11, 1945-1952.
