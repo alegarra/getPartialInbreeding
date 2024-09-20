@@ -29,7 +29,7 @@ $ ./getPartialInbreeding geneal_comet.txt 10 12
  time for 2nd approach    1.73147599515505  
 ```
 
-The file `PartialInbreeding.txt` (+first to last if included) is as follows
+The file `PartialInbreeding.txt` (+first to last) is as follows
 ```
 $ cat PartialInbreeding.txt10to12 
  ancestor individual Fpartial numberOfAncestors
@@ -43,7 +43,7 @@ $ cat PartialInbreeding.txt10to12
 
 so individual 10 has 5 partial inbreeding coefficients due to individuals 1,3,4,5,7. The column `numberOfAncestors` indicates how many ancestors it has (including itself). The order of ancestor within individual is unpredictable as several threads are potentially used, but this does not affect the final result.
 
-## TtimesI-P.jl
+## TtimesImP.jl
 
 This program computes matrix K=T(I-P). The coefficients in K are the ones used to estimated EBVs for inbreeding depression load.   It is called as e.g.
 
@@ -71,7 +71,9 @@ Go to (exampleBLUP/README.md).
 # References
 
 García-Cortés, L. A., Martí-Avila, J. C., & Toro, M. A. (2010). Fine decomposition of the inbreeding and the coancestry coefficients by using the tabular method. Conservation Genetics, 11, 1945-1952.
+
 Martinez-Castillero, M., Varona, L., Pegolo, S., Rossoni, A., & Cecchinato, A. (2021). Bayesian inference of the inbreeding load variance for fertility traits in Brown Swiss cattle. Journal of Dairy Science, 104(9), 10040-10048.
+
 Varona, L., Altarriba, J., Moreno, C., Martínez-Castillero, M., & Casellas, J. (2019). A multivariate analysis with direct additive and inbreeding depression load effects. Genetics Selection Evolution, 51(1), 1-12.
 
 
